@@ -6,18 +6,27 @@ import { Document } from 'mongoose';
 import { TaskService } from './tasks.service';
 import { UpdateTaskProvider } from './providers/updateTask.provider';
 import { matchedData } from 'express-validator';
+import { ITaskPagination } from './interfaces/taskPagination.interface';
+import { GetTasksProvider } from './providers/getTasks.provider';
 
 @injectable()
 export class TasksController {
   constructor(
     @inject(UserController) private userController: UserController,
     @inject(TaskService) private taskService: TaskService,
-    @inject(UpdateTaskProvider) private updateTaskProvider: UpdateTaskProvider
+    @inject(UpdateTaskProvider) private updateTaskProvider: UpdateTaskProvider,
+    @inject(GetTasksProvider) private getTasksProvider: GetTasksProvider
   ) {}
 
   public async handleGetTasks(req: Request, res: Response) {
-    const tasks = await this.taskService.findAll();
-    return tasks;
+    const validatedData: Partial<ITaskPagination> = matchedData(req);
+    try {
+      const tasks: { data: ITask[]; meta: {} } =
+        await this.getTasksProvider.findAllTasks(validatedData);
+      return tasks;
+    } catch (error: any) {
+      throw new Error(error);
+    }
   }
 
   public async handlePostTasks(req: Request<{}, {}, ITask>, res: Response) {
